@@ -1,0 +1,253 @@
+package Car_Rental;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class CarRentalSystemGUI extends JFrame {
+    private Car[] cars;
+
+    public CarRentalSystemGUI(Car[] cars) {
+        this.cars = cars;
+
+        setTitle("Car Rental System");
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setSize(900, 600);
+        setLocationRelativeTo(null);
+
+        JPanel headerPanel = new JPanel();
+        headerPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        add(headerPanel, BorderLayout.NORTH);
+
+        ImageIcon logoIcon = new ImageIcon("images/LogoJL.jpg");
+        Image logoImage = logoIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+        JLabel logoLabel = new JLabel(new ImageIcon(logoImage));
+
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setBackground(Color.WHITE);
+
+        JLabel featuredVehiclesLabel = new JLabel("Our Featured Vehicles");
+        featuredVehiclesLabel.setFont(new Font("Arial", Font.BOLD, 28));
+        featuredVehiclesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel subHeadingLabel = new JLabel("Choose from any of our featured vehicles");
+        subHeadingLabel.setFont(new Font("Arial", Font.PLAIN, 18));
+        subHeadingLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        textPanel.add(featuredVehiclesLabel);
+        textPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        textPanel.add(subHeadingLabel);
+
+        headerPanel.add(logoLabel);
+        headerPanel.add(textPanel);
+
+        JPanel carPanel = new JPanel();
+        carPanel.setLayout(new GridLayout(0, 3, 15, 15));
+        carPanel.setBackground(new Color(90, 174, 173));
+        carPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        for (Car car : cars) {
+            carPanel.add(createCarCard(car));
+        }
+
+        JScrollPane scrollPane = new JScrollPane(carPanel);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        add(scrollPane);
+
+        // Add buttons at the bottom
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        buttonPanel.setBackground(Color.WHITE);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        JButton viewRentalsButton = new JButton("View Rentals");
+        viewRentalsButton.setBackground(new Color(0, 122, 204));
+        viewRentalsButton.setForeground(Color.WHITE);
+        viewRentalsButton.setFocusPainted(false);
+        viewRentalsButton.setFont(new Font("Arial", Font.BOLD, 12));
+        viewRentalsButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        viewRentalsButton.addActionListener(e -> viewRentals());
+
+        JButton returnCarButton = new JButton("Return Car");
+        returnCarButton.setBackground(new Color(0, 122, 204));
+        returnCarButton.setForeground(Color.WHITE);
+        returnCarButton.setFocusPainted(false);
+        returnCarButton.setFont(new Font("Arial", Font.BOLD, 12));
+        returnCarButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        returnCarButton.addActionListener(e -> returnCar());
+
+        buttonPanel.add(viewRentalsButton);
+        buttonPanel.add(returnCarButton);
+
+        setVisible(true);
+    }
+
+    private JPanel createCarCard(Car car) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setBackground(new Color(90, 174, 173));
+        card.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
+
+        JLabel carImageLabel = new JLabel();
+        String imagePath = "/images/" + car.getImagePath();
+        ImageIcon carImageIcon = new ImageIcon(getClass().getResource(imagePath));
+        if (carImageIcon.getImage() != null) {
+            Image carImage = carImageIcon.getImage().getScaledInstance(250, 150, Image.SCALE_SMOOTH);
+            carImageLabel.setIcon(new ImageIcon(carImage));
+            carImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        } else {
+            JOptionPane.showMessageDialog(this, "Car image not found for: " + car.getName(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        card.add(carImageLabel, BorderLayout.CENTER);
+
+        JPanel detailsPanel = new JPanel();
+        detailsPanel.setLayout(new BoxLayout(detailsPanel, BoxLayout.Y_AXIS));
+        detailsPanel.setBackground(new Color(90, 174, 173));
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JLabel nameLabel = new JLabel(car.getName() + " (" + car.getBrand() + ")");
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        JLabel priceLabel = new JLabel("PHP " + car.getPrice() + " per day");
+        JLabel transmissionLabel = new JLabel("Transmission: " + car.getTransmission());
+        JLabel fuelLabel = new JLabel("Fuel: " + car.getFuel());
+        JLabel seatsLabel = new JLabel("Seats: " + car.getSeats());
+
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        transmissionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fuelLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        seatsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        detailsPanel.add(nameLabel);
+        detailsPanel.add(priceLabel);
+        detailsPanel.add(transmissionLabel);
+        detailsPanel.add(fuelLabel);
+        detailsPanel.add(seatsLabel);
+
+        JButton rentButton = new JButton("Rent Now");
+        rentButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        rentButton.setBackground(new Color(0, 122, 204));
+        rentButton.setForeground(Color.WHITE);
+        rentButton.setFocusPainted(false);
+        rentButton.setFont(new Font("Arial", Font.BOLD, 12));
+        rentButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        rentButton.addActionListener(e -> rentCar(car));
+
+        detailsPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        detailsPanel.add(rentButton);
+
+        card.add(detailsPanel, BorderLayout.SOUTH);
+
+        return card;
+    }
+
+    private void rentCar(Car car) {
+        String input = JOptionPane.showInputDialog(this, "How many days will you rent? (Maximum 15 days to rent)");
+        if (input != null && !input.trim().isEmpty()) {
+            try {
+                int days = Integer.parseInt(input);
+                if (days > 15) {
+                    JOptionPane.showMessageDialog(this, "Warning: You can only rent for up to 15 days.", "Warning", JOptionPane.WARNING_MESSAGE);
+                } else {
+                    int totalPrice = car.getPrice() * days;
+                    JOptionPane.showMessageDialog(this, "You have rented " + days + " days for the car: " + car.getName() + ". Total Price: PHP " + totalPrice);
+                    insertRentalData(car.getId(), days, totalPrice);
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid input. Please enter a valid number.");
+            }
+        }
+    }
+
+    private void insertRentalData(int carId, int days, int totalPrice) {
+        String jdbcUrl = "jdbc:mysql://localhost:3306/car_rental_system";
+        String dbUser = "car_rental";
+        String dbPassword = "lloyd123";
+
+        try {
+            Connection conn = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword);
+            String sql = "INSERT INTO rentals (car_id, rental_days, total_price) VALUES (?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, carId);
+            pstmt.setInt(2, days);
+            pstmt.setInt(3, totalPrice);
+            pstmt.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Rental data successfully saved!");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error saving rental data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void viewRentals() {
+        String jdbcUrl = "jdbc:mysql://localhost:3306/car_rental_system";
+        String dbUser = "car_rental";
+        String dbPassword = "lloyd123";
+
+        try {
+            Connection conn = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword);
+            String sql = "SELECT * FROM rentals";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            StringBuilder rentals = new StringBuilder("Rental Records:\n\n");
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                int carId = rs.getInt("car_id");
+                int rentalDays = rs.getInt("rental_days");
+                int totalPrice = rs.getInt("total_price");
+                rentals.append("ID: ").append(id)
+                        .append(", Car ID: ").append(carId)
+                        .append(", Rental Days: ").append(rentalDays)
+                        .append(", Total Price: PHP ").append(totalPrice).append("\n");
+            }
+
+            JOptionPane.showMessageDialog(this, rentals.toString(), "View Rentals", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error fetching rental data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void returnCar() {
+        String input = JOptionPane.showInputDialog(this, "Enter the ID of the car to mark it as returned:");
+        if (input != null && !input.trim().isEmpty()) {
+            try {
+                int carId = Integer.parseInt(input);
+
+                String jdbcUrl = "jdbc:mysql://localhost:3306/car_rental_system";
+                String dbUser = "car_rental";
+                String dbPassword = "lloyd123";
+
+                Connection conn = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword);
+                String sql = "UPDATE rentals SET returned = TRUE WHERE car_id = ?";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setInt(1, carId);
+                int rowsAffected = pstmt.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    JOptionPane.showMessageDialog(this, "Car successfully marked as returned.");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Car not found or already returned. Please check the car ID and try again.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid input. Please enter a valid number.");
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error updating return status: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    
+        new CarRentalSystemGUI(cars);
+    }
+}
